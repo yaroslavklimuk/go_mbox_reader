@@ -105,7 +105,7 @@ func TestParseMessage(t *testing.T) {
 			if err != nil {
 				fmt.Println(err)
 			}
-			fmt.Printf("MSG: %v\n", msg.bodies["text/html"].headers)
+			fmt.Printf("MSG: %v\n", msg)
 		})
 	}
 }

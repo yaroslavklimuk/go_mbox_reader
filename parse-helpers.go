@@ -149,3 +149,17 @@ func getBoundaryFromCType(ctype []byte) []byte {
 	}
 	return nil
 }
+
+func getMimeTypeFromCType(ctype []byte) []byte {
+	splitted := bytes.Split(ctype, []byte(";"))
+	return bytes.Trim(splitted[0], " \t")
+}
+
+func getCharsetFromCType(ctype []byte) []byte {
+	r, _ := regexp.Compile(`.+charset=(\")?([^\"\n]+)(\")?.*`)
+	matches := r.FindStringSubmatch(string(ctype))
+	if matches[2] != "" {
+		return []byte(matches[2])
+	}
+	return nil
+}

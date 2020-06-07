@@ -160,7 +160,7 @@ func ParseSimpleMessageBody(scanner *bufio.Scanner, reader *bufio.Reader, msg *M
 
 	section.endLine = uint64(len(msg.content)) - 1
 	msg.bodies = make(map[string]Section)
-	msg.bodies[string(msg.headers[string(H_CT_TYPE)][0])] = section
+	msg.bodies[string(getMimeTypeFromCType(msg.headers[string(H_CT_TYPE)][0]))] = section
 	return nil
 }
 
@@ -199,7 +199,7 @@ func ParseSection(scanner *bufio.Scanner, msg *Message, boundary []byte) (lastSe
 	}
 	if _, ok := sectionHeaders[string(H_CT_DISP)]; !ok {
 		lastSection, err := parseMainContentSection(scanner, msg, boundary, sectionHeaders)
-		fmt.Printf("sec headers %v\n", msg.bodies)
+		// fmt.Printf("sec headers %v\n", msg.bodies)
 		return lastSection, err
 	} else {
 		lastSection, err := parseAttachmentSection(scanner, msg, boundary, sectionHeaders)
@@ -243,7 +243,7 @@ func parseTextSection(scanner *bufio.Scanner, msg *Message, boundary []byte,
 		return false, err
 	}
 	section.endLine = uint64(len(msg.content)) - 2
-	msg.bodies[string(ctype)] = section
+	msg.bodies[string(getMimeTypeFromCType(ctype))] = section
 
 	lastBoundary := append(boundary, ([]byte("--"))...)
 	if bytes.Equal(lineBytes, lastBoundary) {
