@@ -1,0 +1,68 @@
+[
+	{
+		"line": "Content-Type: multipart/related;",
+		"name": "CONTENT-TYPE",
+		"value": "multipart/related;",
+		"error": ""
+	},
+	{
+		"line": " by penguins.hercules.rrv.ru (Postfix) with ESMTP id E5A84402055",
+		"name": "",
+		"value": "by penguins.hercules.rrv.ru (Postfix) with ESMTP id E5A84402055",
+		"error": ""
+	},
+	{
+		"line": "\tboundary=\"=felis-related=20200424143216=877524\"",
+		"name": "",
+		"value": "\tboundary=\"=felis-related=20200424143216=877524\"",
+		"error": ""
+	},
+	{
+		"line": "boundary=\"=felis-related=20200424143216=877524\"",
+		"name": "",
+		"value": "boundary=\"=felis-related=20200424143216=877524\"",
+		"error": ""
+	},
+	{
+		"line": "Message-Id:<20200424140840.0.20200424140840_eui_@3167.102768121.3058050.import20200424123718.ingosru>",
+		"name": "MESSAGE-ID",
+		"value": "<20200424140840.0.20200424140840_eui_@3167.102768121.3058050.import20200424123718.ingosru>",
+		"error": ""
+	},
+	{
+		"line": ":<20200424140840.0.20200424140840_eui_@3167.102768121.3058050.import20200424123718.ingosru>",
+		"name": "",
+		"value": "<20200424140840.0.20200424140840_eui_@3167.102768121.3058050.import20200424123718.ingosru>",
+		"error": ""
+	},
+	{
+		"line": "\":<20200424140840.0.20200424140840_eui_@3167.102768121.3058050.import20200424123718.ingosru>",
+		"name": "\"",
+		"value": "<20200424140840.0.20200424140840_eui_@3167.102768121.3058050.import20200424123718.ingosru>",
+		"error": ""
+	},
+	{
+		"line": "Subject: =?utf-8?Q?=D0=A1=D1=82=D1=80=D0=B0=D1=85=D0=BE=D0=B2=D0=BE=D0=B9=20?=",
+		"name": "SUBJECT",
+		"value": "Страховой ",
+		"error": ""
+	},
+	{
+		"line": "Subject: =?utf-8?B?ZGY3Zjk3Zjg5aDdnZmc3Zzg3ODlnag==?=",
+		"name": "SUBJECT",
+		"value": "df7f97f89h7gfg7g8789gj",
+		"error": ""
+	},
+	{
+		"line": " =?windows-1251?Q?_=C0=EA=F6=E8=EE=ED=E5=F0=ED=EE=E5_=EE=E1=F9=E5=F1?=",
+		"name": "",
+		"value": "_Акционерное_общес",
+		"error": ""
+	},
+	{
+		"line": "\tfor <cheremushcka.belyakova54654@order.penguins.ru>; Wed,  8 Apr 2020 10:22:13 +0300 (MSK)",
+		"name": "",
+		"value": "\tfor <cheremushcka.belyakova54654@order.penguins.ru>; Wed,  8 Apr 2020 10:22:13 +0300 (MSK)",
+		"error": ""
+	}
+]

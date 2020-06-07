@@ -1,0 +1,34 @@
+[
+	{
+		"input": "=?windows-1251?Q?=CE=D4=C4_=D2=E0=EA=F1=EA=EE=EC?= <noreply@email.ru>",
+		"output": "ОФД_Такском <noreply@email.ru>"
+	},
+	{
+		"input": "=?utf-8?B?0KHRgtGA0LDRhdC+0LLQsNC90LjQtSDRgtC10LHRjw==?= <noreply@email.ru>",
+		"output": "Страхование тебя <noreply@email.ru>"
+	},
+	{
+		"input": "<noreply@email.ru> =?utf-8?B?0KHRgtGA0LDRhdC+0LLQsNC90LjQtSDRgtC10LHRjw==?= <noreply@email.ru>",
+		"output": "<noreply@email.ru> Страхование тебя <noreply@email.ru>"
+	},
+	{
+		"input": "Lorem ipsum dolor",
+		"output": "Lorem ipsum dolor"
+	},
+	{
+		"input": "=?utf-8?B?0KHRgtGA0LDRhdC+0LLQsNC90LjQtSDRgtC10LHRjw==?= <noreply@email.ru> =?windows-1251?Q?_=C0=EA=F6=E8=EE=ED=E5=F0=ED=EE=E5_=EE=E1=F9=E5=F1?=",
+		"output": "Страхование тебя <noreply@email.ru> _Акционерное_общес"
+	},
+	{
+		"input": "=?utf-8?B?0KHRgtGA0LDRhdC+0LLQsNC90LjQtSDRgtC10LHRjw==?= =?windows-1251?Q?=CE=D4=C4_=D2=E0=EA=F1=EA=EE=EC?= =?windows-1251?Q?_=C0=EA=F6=E8=EE=ED=E5=F0=ED=EE=E5_=EE=E1=F9=E5=F1?=",
+		"output": "Страхование тебяОФД_Такском_Акционерное_общес"
+	},
+	{
+		"input": " =?utf-8?B?ZGY3Zjk3Zjg5aDdnZmc3Zzg3ODlnag==?=",
+		"output": "df7f97f89h7gfg7g8789gj"
+	},
+	{
+		"input": " =?windows-1251?Q?_=C0=EA=F6=E8=EE=ED=E5=F0=ED=EE=E5_=EE=E1=F9=E5=F1?=",
+		"output": "_Акционерное_общес"
+	}
+]

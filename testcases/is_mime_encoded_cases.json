@@ -1,0 +1,22 @@
+[
+	{
+		"input": "=?windows-1251?Q?=CE=D4=C4_=D2=E0=EA=F1=EA=EE=EC?=",
+		"result": true
+	},
+	{
+		"input": "=?utf-8?B?0KHRgtGA0LDRhdC+0LLQsNC90LjQtSDRgtC10LHRjw==?= <noreply@email.ru>",
+		"result": false
+	},
+	{
+		"input": "=?utf-8?B?0KHRgtGA0LDRhdC+0LLQsNC90LjQtSDRgtC10LHRjw==?=",
+		"result": true
+	},
+	{
+		"input": "Lorem ipsum dolor",
+		"result": false
+	},
+	{
+		"input": "<noreply@email.ru> =?utf-8?B?0KHRgtGA0LDRhdC+0LLQsNC90LjQtSDRgtC10LHRjw==?=",
+		"result": false
+	},
+]

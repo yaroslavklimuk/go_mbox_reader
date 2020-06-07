@@ -1,0 +1,56 @@
+[
+	{
+		"message-file": "message1.mbox",
+		"sender": "randsender@mail.com",
+		"timestamp": "Wed Apr  8 10:22:17 2020",
+		"headers": {
+			"Return-Path": ["<randsender@mail.com>"],
+			"X-Original-To": ["randomemail12345@mail.com"],
+			"Delivered-To": ["randomemail12345@mail.com"],
+			"Received": [
+				"from some.mailrelay.net (some.mailrelay.net [111.111.111.111])\tby some.mailserver.net (Postfix) with ESMTP id B63E3401FD5\tfor <randomemail12345@mail.com>; Wed,  8 Apr 2020 10:22:17 +0300 (MSK)",
+				"from some.mailrelay.net (localhost [127.0.0.1])\tby some.mailrelay.net (ESMTP Application) with ESMTP id 96B4F133665A\tfor <randomemail12345@mail.com>; Wed,  8 Apr 2020 10:22:17 +0300 (MSK)",
+				"from some.mailrelay.net ([127.0.0.1])\tby some.mailrelay.net (some.mailrelay.net [127.0.0.1]) (relay-filter, port 10024)\twith LMTP id wLMAUsr8xsYe\tfor <randomemail12345@mail.com>;\tWed,  8 Apr 2020 10:22:17 +0300 (MSK)"
+			],
+			"Authentication-Results": ["some.mailrelay.net (relay-filter);\tdkim=pass (1024-bit key) reason=\"pass (just generated, assumed good)\"\theader.d=somedomain.com"],
+			"DKIM-Signature": ["v=1; a=rsa-sha256; c=relaxed/simple; d=somedomain.com; h=\tcontent-type:content-type:mime-version:subject:subject\t:message-id:from:from:date:date:received; s=default; t=1586330537; x=1588922538; bh=2WV9KTH/myjAdcVsMKiGEiMVfgVJJK1CP5MpZTfP71s=; b=WEpT7B97BqLyVFwOp/1ZGVB674vKudi0jf2pLsPcw8G36yJBhrhvbdj6wCCq0mAwNkv2ADYtLK4rlsTU3CDZoIs+nPXSTMoPjst7SuEZyW5YtZPscIwsocKSgifrArDkZcQeFU9A09Nty/1o0hNtEJnboHPRk1xM9mcasKQ="],
+			"Date": ["Wed, 8 Apr 2020 10:22:16 +0300"],
+			"From": ["<randsender@mail.com>"],
+			"To": ["<randomemail12345@mail.com>"],
+			"Message-ID": ["<1914245586.943.1586330536636@smtp.server.net>"],
+			"Subject": ["=?UTF-8?B?0KHQu9GD0LDQudC90L7QtSDQv9C40YHRjNC80L4=?= =?UTF-8?B?INC00LvRjyDQktCw0YE=?="],
+			"MIME-Version": ["1.0"],
+			"Content-Type": ["multipart/mixed;\tboundary=\"----=_Part_942_519775205.1586330536590\""],
+			"breadcrumbId": ["ID-interplat63avto3-33645-1586322447740-29-111323"],
+			"singularityheader": ["appId=8*ctrlguid=1580473325*acctguid=5f209742-bb6a-4da6-9842-4f4e76ca0f8d*ts=1586330529623*btid=2134*guid=212714e2-3c49-4f7d-9018-4ff322880d5b*exitguid=10|9*unresolvedexitid=863*cidfrom=17*etypeorder=WEB_SERVICE*esubtype=WEB_SERVICE*cidto={[UNRESOLVED][863]}*tcop=1:32732"],
+			"X-Originating-IP": ["[112.112.112.112]"]
+		},
+		"bodies": {
+			"text/html": {
+				"headers": {
+					"CONTENT-TYPE": ["text/html; charset=\"UTF-8\""],
+					"CONTENT-TRANSFER-ENCODING": ["base64"]
+				},
+				"content": "<html>\r\n<head>\r\n<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">\r\n</head>\r\n<body>\r\n<p>Здравствуйте, John Doe!<br>\r\nCONFIDENTIALITY NOTICE:<br>\r\nThe contents of this message are intended solely for business communication.\r\n</body>\r\n</html>"
+			}
+		},
+		"attachments":[
+			{
+				"headers": {
+					"Content-Type": ["application/octet-stream;\r\n\tname=\"=?UTF-8?B?0JfQsNGP0LLQu9C10L3QuNC1LnBkZg==?=\""],
+					"Content-Transfer-Encoding": ["base64"],
+					"Content-Disposition": ["inline;\r\n\tfilename=\"=?UTF-8?B?0JfQsNGP0LLQu9C10L3QuNC1LnBkZg==?=\""]
+				},
+				"content": "message1_att1.pdf"
+			},
+			{
+				"headers": {
+					"Content-Type": ["application/octet-stream;\r\n\tname*0=\"=?UTF-8?B?0KPQstC10LTQvtC80LvQtdC90LjQtSDQviDQt9Cw0LrQu9GO0Y\";\r\n\tname*1=\"fQtdC90LjQuCDQldCe0KHQkNCT0J4ucGRm?=\""],
+					"Content-Transfer-Encoding": ["base64"],
+					"Content-Disposition": ["inline;\r\n\tfilename*0=\"=?UTF-8?B?0KPQstC10LTQvtC80LvQtdC90LjQtSDQviDQt9Cw0LrQu9GO0Y\";\r\n\tfilename*1=\"fQtdC90LjQuCDQldCe0KHQkNCT0J4ucGRm?=\""]
+				},
+				"content": "message1_att2.pdf"
+			}
+		]
+	}
+]

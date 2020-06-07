@@ -1,0 +1,26 @@
+[
+	{
+		"line":"From noreply@taxcom.ru  Wed Apr  8 10:22:13 2020", 
+		"id":"noreply@taxcom.ru",
+		"datetime":"2020-04-08 10:22:13",
+		"error":null
+	},
+	{
+		"line":"From email-3167-102768121-3058050-ingosru@ingos-send.ru  Fri Apr  24 14:33:34 2020", 
+		"id":"email-3167-102768121-3058050-ingosru@ingos-send.ru",
+		"datetime":"2020-04-24 14:33:34",
+		"error":null
+	},
+	{
+		"line":">From email-3167-102768121-3058050-ingosru@ingos-send.ru  Fri Apr  17 14:13:34 2020", 
+		"id":"email-3167-102768121-3058050-ingosru@ingos-send.ru",
+		"datetime":"2020-04-17 14:13:34",
+		"error":null
+	},
+	{
+		"line":"Fromemail-3167-102768121-3058050-ingosru@ingos-send.ru  Fri Apr  24 14:33:34 2020", 
+		"id":"",
+		"datetime":"0001-01-01 00:00:00",
+		"error":"Not a message start line."
+	}
+]
