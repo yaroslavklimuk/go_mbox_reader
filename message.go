@@ -32,7 +32,7 @@ type Header struct {
 }
 
 type MessageIface interface {
-	getSender() []byte
+	getSender() string
 	getTimestamp() time.Time
 	getBody(string) ([]byte, error)
 	getHeader(string) Header
@@ -362,12 +362,12 @@ func parseHeaders(scanner *bufio.Scanner, msg *Message) (map[string][][]byte, er
 	return headers, nil
 }
 
-func (message Message) getSender() []byte {
-	return nil
+func (message Message) getSender() string {
+	return message.sender
 }
 
 func (message Message) getTimestamp() time.Time {
-	return time.Now()
+	return message.timestamp
 }
 
 func (message Message) getBody(ctype string) ([]byte, error) {
@@ -409,8 +409,9 @@ func (message Message) getBody(ctype string) ([]byte, error) {
 }
 
 func (message Message) getHeader(name string) Header {
-	var header = Header{}
-	return header
+	if header, ok := message.headers; ok {
+
+	}
 }
 
 func (message Message) getHeaders() []Header {

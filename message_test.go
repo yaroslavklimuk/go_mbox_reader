@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestParseMessagePrefix(t *testing.T) {
@@ -105,7 +106,30 @@ func TestParseMessage(t *testing.T) {
 			if err != nil {
 				fmt.Println(err)
 			}
-			fmt.Printf("MSG: %v\n", msg)
+			msgSender := string(msg.getSender())
+			if msgSender != tcase.Sender {
+				t.Errorf("Sender is not correct. Want:%s, got:%s\n", tcase.Sender, msgSender)
+			}
+			msgTimestamp := msg.getTimestamp().Format(time.RFC3339)
+			if msgTimestamp != tcase.Timestamp {
+				t.Errorf("Timestamp is not correct. Want:%s, got:%s\n", tcase.Timestamp, msgTimestamp)
+			}
+
+			for hkey, hval := range tcase.Headers {
+				msgHeader := msg.getHeader(strings.ToUpper(hkey))
+				fmt.Printf("HEADER: %v\n", msgHeader)
+				if hkey != msgHeader.Name {
+					t.Errorf("Header name is not correct. Want:%s, got:%s\n", hkey, msgHeader.Name)
+				}
+				if len(hval) != len(msgHeader.Values) {
+					t.Errorf("Header items count is not correct. Want:%d, got:%d\n", len(hval), len(msgHeader.Values))
+				}
+				// for i, v := range a {
+				// 	if v != b[i] {
+				// 		return false
+				// 	}
+				// }
+			}
 		})
 	}
 }

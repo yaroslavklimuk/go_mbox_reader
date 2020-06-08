@@ -2,7 +2,7 @@
 	{
 		"message-file": "message1.mbox",
 		"sender": "randsender@mail.com",
-		"timestamp": "Wed Apr  8 10:22:17 2020",
+		"timestamp": "2020-04-08T10:22:17Z",
 		"headers": {
 			"Return-Path": ["<randsender@mail.com>"],
 			"X-Original-To": ["randomemail12345@mail.com"],
