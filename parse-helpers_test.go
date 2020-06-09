@@ -14,7 +14,7 @@ func TestParseHeaderLine(t *testing.T) {
 		Value string `json:"value"`
 		Error string `json:"error"`
 	}
-	testTable := make([]ParseHeaderLineTestCase, 13)
+	testTable := make([]ParseHeaderLineTestCase, 14)
 	data, err := ioutil.ReadFile("testcases/parse_header_line_cases.json")
 	if err != nil {
 		t.Error(err)

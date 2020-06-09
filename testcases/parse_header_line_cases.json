@@ -1,5 +1,11 @@
 [
 	{
+		"line": "\tcontent-type:content-type:mime-version:subject:subject",
+		"name": "",
+		"value": "content-type:content-type:mime-version:subject:subject",
+		"error": ""
+	},
+	{
 		"line": "Content-Type: multipart/related;",
 		"name": "CONTENT-TYPE",
 		"value": "multipart/related;",
