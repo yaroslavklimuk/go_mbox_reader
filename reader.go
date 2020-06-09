@@ -62,8 +62,8 @@ func (reader *MboxReader) Read() (msg MessageIface, err error) {
 		}
 
 		for key, value := range reader.HeaderFilters {
-			msgHeader := msg.getHeader(key)
-			if len(msgHeader.Values) == 0 || !bytes.Equal(msgHeader.Values[0], value) {
+			msgHeader, ok := msg.getHeader(key)
+			if ok && (len(msgHeader.Values) == 0 || !bytes.Equal(msgHeader.Values[0], value)) {
 				goodMsg = false
 				break
 			}

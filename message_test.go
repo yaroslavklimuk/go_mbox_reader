@@ -116,19 +116,19 @@ func TestParseMessage(t *testing.T) {
 			}
 
 			for hkey, hval := range tcase.Headers {
-				msgHeader := msg.getHeader(strings.ToUpper(hkey))
-				fmt.Printf("HEADER: %v\n", msgHeader)
-				if hkey != msgHeader.Name {
-					t.Errorf("Header name is not correct. Want:%s, got:%s\n", hkey, msgHeader.Name)
+				msgHeader, ok := msg.getHeader(strings.ToUpper(hkey))
+				if !ok {
+					t.Errorf("Can not find the header %s\n", strings.ToUpper(hkey))
 				}
 				if len(hval) != len(msgHeader.Values) {
 					t.Errorf("Header items count is not correct. Want:%d, got:%d\n", len(hval), len(msgHeader.Values))
 				}
-				// for i, v := range a {
-				// 	if v != b[i] {
-				// 		return false
-				// 	}
-				// }
+				for hind, hitem := range hval {
+					msgHitem := string(msgHeader.Values[hind])
+					if hitem != msgHitem {
+						t.Errorf("%s header value is not correct. Want:%s, got:%s\n", hkey, hitem, msgHitem)
+					}
+				}
 			}
 		})
 	}

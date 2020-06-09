@@ -35,7 +35,7 @@ type MessageIface interface {
 	getSender() string
 	getTimestamp() time.Time
 	getBody(string) ([]byte, error)
-	getHeader(string) Header
+	getHeader(string) (Header, bool)
 	getHeaders() []Header
 	getAttachments() []AbstractAttachmentIface
 	getRawContents() []byte
@@ -408,10 +408,16 @@ func (message Message) getBody(ctype string) ([]byte, error) {
 	return nil, nil
 }
 
-func (message Message) getHeader(name string) Header {
-	if header, ok := message.headers; ok {
-
+func (message Message) getHeader(name string) (Header, bool) {
+	values, ok := message.headers[name]
+	var header Header
+	if ok {
+		header = Header{
+			Name:   name,
+			Values: values,
+		}
 	}
+	return header, ok
 }
 
 func (message Message) getHeaders() []Header {
