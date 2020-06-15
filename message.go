@@ -43,7 +43,7 @@ type MessageIface interface {
 
 func ParseMessage(scanner *bufio.Scanner, reader *bufio.Reader) (*Message, error) {
 	msg := &Message{}
-	msg.content = make([][]byte, 50)
+	msg.content = make([][]byte, 0)
 
 	var lineBytes []byte
 	for scanner.Scan() {
@@ -60,6 +60,7 @@ func ParseMessage(scanner *bufio.Scanner, reader *bufio.Reader) (*Message, error
 	if err != nil {
 		return nil, err
 	}
+	msg.content = append(msg.content, lineBytes)
 	msg.sender = id
 	msg.timestamp = date
 
@@ -67,6 +68,10 @@ func ParseMessage(scanner *bufio.Scanner, reader *bufio.Reader) (*Message, error
 	if err != nil {
 		return nil, err
 	}
+
+	// for _, bln := range msg.content {
+	// 	fmt.Printf("%sEND\n", string(bln))
+	// }
 
 	err = ParseMessageBody(scanner, reader, msg)
 	if err != nil {
@@ -384,7 +389,14 @@ func (message Message) getBody(ctype string) ([]byte, error) {
 			transEnc = trasnEncHeader[0]
 		}
 
+		// for _, bln := range message.content {
+		// 	fmt.Printf("%sEND\n", string(bln))
+		// }
+		fmt.Printf("LENGTH : %d\nSTART : %d\nEND : %d\n", len(message.content), currSection.startLine, currSection.endLine)
+
+		// fmt.Printf("RAW\n%v\n", string(bytes.Join(message.content, []byte(""))))
 		rawContent = bytes.Join(message.content[currSection.startLine:currSection.endLine], []byte(""))
+		// fmt.Printf("RAW %s\n", string(rawContent))
 
 		if string(transEnc) == string(TR_ENC_QPRNT) {
 			var decodedContent []byte

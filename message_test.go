@@ -80,12 +80,12 @@ func TestParseMessage(t *testing.T) {
 		Content string              `json:"content"`
 	}
 	type ParseMessageTestCase struct {
-		MessageFile string                     `json:"message-file"`
-		Sender      string                     `json:"sender"`
-		Timestamp   string                     `json:"timestamp"`
-		Headers     map[string][]string        `json:"headers"`
-		Bodies      map[string]SectionTestItem `json:"bodies"`
-		Attachments []SectionTestItem          `json:"attachments"`
+		MessageFile string              `json:"message-file"`
+		Sender      string              `json:"sender"`
+		Timestamp   string              `json:"timestamp"`
+		Headers     map[string][]string `json:"headers"`
+		Bodies      map[string]string   `json:"bodies"`
+		Attachments []SectionTestItem   `json:"attachments"`
 	}
 	testTable := make([]ParseMessageTestCase, 1)
 	data, err := ioutil.ReadFile("testcases/parse_message_cases.json")
@@ -128,6 +128,17 @@ func TestParseMessage(t *testing.T) {
 					if hitem != msgHitem {
 						t.Errorf("%s header value is not correct. Want:%s, got:%s\n", hkey, hitem, msgHitem)
 					}
+				}
+			}
+
+			for bkey, tbcontent := range tcase.Bodies {
+				bcontent, err := msg.getBody(bkey)
+				if err != nil {
+					t.Errorf("Error while getting body section %s\n", strings.ToLower(bkey))
+				}
+				strBContent := string(bcontent)
+				if strBContent != tbcontent {
+					t.Errorf("%s body content is not correct.\nWant:%s\ngot:%s\n", strings.ToLower(bkey), tbcontent, strBContent)
 				}
 			}
 		})

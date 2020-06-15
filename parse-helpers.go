@@ -22,7 +22,7 @@ func reachedNewMessage(line []byte) bool {
 }
 
 func stringIsHeaderName(bSlice []byte) bool {
-	badChars := []byte("\r\n\t :")
+	badChars := []byte("\t\n\r :")
 	badCharsLen := len(badChars)
 
 	for _, item := range bSlice {

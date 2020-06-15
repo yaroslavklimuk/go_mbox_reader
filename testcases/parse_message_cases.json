@@ -13,7 +13,7 @@
 				"from some.mailrelay.net ([127.0.0.1])\tby some.mailrelay.net (some.mailrelay.net [127.0.0.1]) (relay-filter, port 10024)\twith LMTP id wLMAUsr8xsYe\tfor <randomemail12345@mail.com>;\tWed,  8 Apr 2020 10:22:17 +0300 (MSK)"
 			],
 			"Authentication-Results": ["some.mailrelay.net (relay-filter);\tdkim=pass (1024-bit key) reason=\"pass (just generated, assumed good)\"\theader.d=somedomain.com"],
-			"DKIM-Signature": ["v=1; a=rsa-sha256; c=relaxed/simple; d=somedomain.com; h=\tcontent-type:content-type:mime-version:subject:subject\t:message-id:from:from:date:date:received; s=default; t=1586330537; x=1588922538; bh=2WV9KTH/myjAdcVsMKiGEiMVfgVJJK1CP5MpZTfP71s=; b=WEpT7B97BqLyVFwOp/1ZGVB674vKudi0jf2pLsPcw8G36yJBhrhvbdj6wCCq0mAwNkv2ADYtLK4rlsTU3CDZoIs+nPXSTMoPjst7SuEZyW5YtZPscIwsocKSgifrArDkZcQeFU9A09Nty/1o0hNtEJnboHPRk1xM9mcasKQ="],
+			"DKIM-Signature": ["v=1; a=rsa-sha256; c=relaxed/simple; d=somedomain.com; h=\tcontent-type:content-type:mime-version:subject:subject\t:message-id:from:from:date:date:received; s=default; t=\t1586330537; x=1588922538; bh=2WV9KTH/myjAdcVsMKiGEiMVfgVJJK1CP5M\tpZTfP71s=; b=WEpT7B97BqLyVFwOp/1ZGVB674vKudi0jf2pLsPcw8G36yJ\tBhrhvbdj6wCCq0mAwNkv2ADYtLK4rlsTU3CDZoIs+nPXSTMoPjst7SuEZyW5YtZP\tscIwsocKSgifrArDkZcQeFU9A09Nty/1o0hNtEJnboHPRk1xM9mcasKQ="],
 			"Date": ["Wed, 8 Apr 2020 10:22:16 +0300"],
 			"From": ["<randsender@mail.com>"],
 			"To": ["<randomemail12345@mail.com>"],
@@ -26,13 +26,7 @@
 			"X-Originating-IP": ["[112.112.112.112]"]
 		},
 		"bodies": {
-			"text/html": {
-				"headers": {
-					"CONTENT-TYPE": ["text/html; charset=\"UTF-8\""],
-					"CONTENT-TRANSFER-ENCODING": ["base64"]
-				},
-				"content": "<html>\r\n<head>\r\n<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">\r\n</head>\r\n<body>\r\n<p>Здравствуйте, John Doe!<br>\r\nCONFIDENTIALITY NOTICE:<br>\r\nThe contents of this message are intended solely for business communication.\r\n</body>\r\n</html>"
-			}
+			"text/html": "<html>\r\n<head>\r\n<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">\r\n</head>\r\n<body>\r\n<p>Здравствуйте, John Doe!<br>\r\nCONFIDENTIALITY NOTICE:<br>\r\nThe contents of this message are intended solely for business communication.\r\n</body>\r\n</html>"
 		},
 		"attachments":[
 			{

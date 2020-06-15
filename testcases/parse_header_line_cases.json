@@ -2,7 +2,7 @@
 	{
 		"line": "\tcontent-type:content-type:mime-version:subject:subject",
 		"name": "",
-		"value": "content-type:content-type:mime-version:subject:subject",
+		"value": "\tcontent-type:content-type:mime-version:subject:subject",
 		"error": ""
 	},
 	{
