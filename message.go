@@ -69,10 +69,6 @@ func ParseMessage(scanner *bufio.Scanner, reader *bufio.Reader) (*Message, error
 		return nil, err
 	}
 
-	// for _, bln := range msg.content {
-	// 	fmt.Printf("%sEND\n", string(bln))
-	// }
-
 	err = ParseMessageBody(scanner, reader, msg)
 	if err != nil {
 		return nil, err
@@ -173,6 +169,7 @@ func ParseMultipartMessageBody(scanner *bufio.Scanner, msg *Message, boundary []
 	var lineBytes []byte
 	for scanner.Scan() {
 		lineBytes = scanner.Bytes()
+		msg.content = append(msg.content, lineBytes)
 		if bytes.Equal(lineBytes, boundary) {
 			break
 		}
@@ -182,7 +179,7 @@ func ParseMultipartMessageBody(scanner *bufio.Scanner, msg *Message, boundary []
 	}
 
 	msg.bodies = make(map[string]Section)
-	msg.attachments = make([]Section, 2)
+	msg.attachments = make([]Section, 0)
 	stopReading := false
 
 	for stopReading == false {
@@ -204,7 +201,6 @@ func ParseSection(scanner *bufio.Scanner, msg *Message, boundary []byte) (lastSe
 	}
 	if _, ok := sectionHeaders[string(H_CT_DISP)]; !ok {
 		lastSection, err := parseMainContentSection(scanner, msg, boundary, sectionHeaders)
-		// fmt.Printf("sec headers %v\n", msg.bodies)
 		return lastSection, err
 	} else {
 		lastSection, err := parseAttachmentSection(scanner, msg, boundary, sectionHeaders)
@@ -303,12 +299,12 @@ func parseAttachmentSection(scanner *bufio.Scanner, msg *Message,
 	boundary []byte, sectionHeaders map[string][][]byte) (lastSection bool, err error) {
 	var lineBytes []byte
 	var section Section
-	section.startLine = uint64(len(msg.content))
+	section.startLine = uint64(len(msg.content) - 1)
 	section.headers = sectionHeaders
 	for scanner.Scan() {
 		lineBytes = scanner.Bytes()
 		msg.content = append(msg.content, lineBytes)
-
+		fmt.Printf("B: %s\n", string(msg.content[len(msg.content)-1]))
 		if bytes.HasPrefix(lineBytes, boundary) {
 			break
 		}
@@ -316,7 +312,7 @@ func parseAttachmentSection(scanner *bufio.Scanner, msg *Message,
 	if err := scanner.Err(); err != nil {
 		return false, err
 	}
-	section.endLine = uint64(len(msg.content)) - 2
+	section.endLine = uint64(len(msg.content) - 1)
 	msg.attachments = append(msg.attachments, section)
 
 	lastBoundary := append(boundary, ([]byte("--"))...)
@@ -336,8 +332,10 @@ func parseHeaders(scanner *bufio.Scanner, msg *Message) (map[string][][]byte, er
 	for scanner.Scan() {
 		lineBytes = scanner.Bytes()
 		msg.content = append(msg.content, lineBytes)
+		fmt.Printf("H: %s\n", string(msg.content[len(msg.content)-1]))
 		//reached an empty line between headers and a body
 		if len(lineBytes) == 0 {
+			fmt.Println("BREAKIN IN")
 			break
 		}
 		hname, value, err := parseHeaderLine(lineBytes)
@@ -346,7 +344,6 @@ func parseHeaders(scanner *bufio.Scanner, msg *Message) (map[string][][]byte, er
 		}
 
 		if hname != "" {
-			// fmt.Printf("HEADER: %s -- %s\n", hname, string(value))
 			if headers[hname] == nil {
 				headers[hname] = make([][]byte, 0)
 			}
@@ -354,7 +351,6 @@ func parseHeaders(scanner *bufio.Scanner, msg *Message) (map[string][][]byte, er
 			lastHeaderValueIdx = len(headers[hname]) - 1
 			currHeaderName = hname
 		} else {
-			// fmt.Printf("HEADER: %s -- %s\n", hname, string(value))
 			lastValue := headers[currHeaderName][lastHeaderValueIdx]
 			lastValue = append(lastValue, value...)
 			headers[currHeaderName][lastHeaderValueIdx] = lastValue
@@ -389,14 +385,7 @@ func (message Message) getBody(ctype string) ([]byte, error) {
 			transEnc = trasnEncHeader[0]
 		}
 
-		// for _, bln := range message.content {
-		// 	fmt.Printf("%sEND\n", string(bln))
-		// }
-		fmt.Printf("LENGTH : %d\nSTART : %d\nEND : %d\n", len(message.content), currSection.startLine, currSection.endLine)
-
-		// fmt.Printf("RAW\n%v\n", string(bytes.Join(message.content, []byte(""))))
 		rawContent = bytes.Join(message.content[currSection.startLine:currSection.endLine], []byte(""))
-		// fmt.Printf("RAW %s\n", string(rawContent))
 
 		if string(transEnc) == string(TR_ENC_QPRNT) {
 			var decodedContent []byte
