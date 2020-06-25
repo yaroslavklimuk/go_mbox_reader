@@ -1,6 +1,6 @@
 [
 	{
-		"text": "Return-Path: <noreply@taxcom.ru>\r\nX-Original-To: cheremushcka.belyakova54654@order.penguins.ru\r\nDelivered-To: cheremushcka.belyakova54654@order.penguins.ru\r\nReceived: from smtp1.taxcom.ru (smtp1.taxcom.ru [193.0.214.187])\r\n\tby penguins.hercules.rrv.ru (Postfix) with ESMTP id 5DE56401FD5\r\n\tfor <cheremushcka.belyakova54654@order.penguins.ru>; Wed,  8 Apr 2020 10:22:13 +0300 (MSK)\r\nReceived: from kktreceipt (kktreceipt.m10.loc [172.20.60.24])\r\n\tby smtp1.taxcom.ru (Postfix) with ESMTP id 4DE9EC3010\r\n\tfor <cheremushcka.belyakova54654@order.penguins.ru>; Wed,  8 Apr 2020 10:22:13 +0300 (MSK)\r\nMIME-Version: 1.0\r\nFrom: =?windows-1251?Q?=CE=D4=C4_=D2=E0=EA=F1=EA=EE=EC?= <noreply@taxcom.ru>\r\nTo: cheremushcka.belyakova54654@order.penguins.ru\r\nDate: 8 Apr 2020 10:22:15 +0300\r\nSubject: =?windows-1251?Q?=CA=E0=F1=F1=EE=E2=FB=E9_=F7=E5=EA_=EE=F2?=\r\n =?windows-1251?Q?_=C0=EA=F6=E8=EE=ED=E5=F0=ED=EE=E5_=EE=E1=F9=E5=F1?=\r\n =?windows-1251?Q?=F2=E2=EE_=22=C0=CB=DC=D4=C0=D1=D2=D0=C0=D5=CE=C2=C0?=\r\n =?windows-1251?Q?=CD=C8=C5=22_=E7=E0_08=2E04=2E2020?=\r\nContent-Type: text\/html; charset=utf-8\r\nContent-Transfer-Encoding: base64\r\n\r\nPGh0bWw+PGhlYWQ+CiAgICA8bWV0YSBjaGFyc2V0PSJ1dGYtOCI+CjwvaGVhZD4KPGJv",
+		"file": "just_headers_1.txt",
 		"headers": {
 			"RETURN-PATH":["<noreply@taxcom.ru>"],
 			"X-ORIGINAL-TO":["cheremushcka.belyakova54654@order.penguins.ru"],

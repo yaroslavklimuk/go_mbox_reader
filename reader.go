@@ -1,21 +1,19 @@
 package mbox_reader
 
 import (
-	"bufio"
-	"bytes"
 	"io"
 	"os"
 	"time"
 )
 
 type MboxReader struct {
-	HeaderFilters         map[string][]byte
-	HeaderRegexFilters    map[string][]byte
+	HeaderFilters         map[string]string
+	HeaderRegexFilters    map[string]string
 	FromTime              time.Time
 	BeforeTime            time.Time
-	AttachmentNames       [][]byte
-	AttachmentNameRegexes [][]byte
-	reader                io.Reader
+	AttachmentNames       []string
+	AttachmentNameRegexes []string
+	reader                io.ReadSeeker
 }
 
 type MboxReaderIface interface {
@@ -43,12 +41,14 @@ func OpenMboxReader(filepath string) (*MboxReader, error) {
 }
 
 func (reader *MboxReader) Read() (msg MessageIface, err error) {
-	lineScanner := bufio.NewScanner(reader.reader)
-	bufReader := bufio.NewReader(reader.reader)
 	for {
-		msg, err := ParseMessage(lineScanner, bufReader)
+		msg, err := readMsgContent(reader.reader)
 		if err != nil {
-			return msg, err
+			return nil, err
+		}
+		err = parseMessage(&msg)
+		if err != nil {
+			return nil, err
 		}
 
 		goodMsg := true
@@ -63,7 +63,7 @@ func (reader *MboxReader) Read() (msg MessageIface, err error) {
 
 		for key, value := range reader.HeaderFilters {
 			msgHeader, ok := msg.getHeader(key)
-			if ok && (len(msgHeader.Values) == 0 || !bytes.Equal(msgHeader.Values[0], value)) {
+			if ok && (len(msgHeader.Values) == 0 || msgHeader.Values[0] != value) {
 				goodMsg = false
 				break
 			}

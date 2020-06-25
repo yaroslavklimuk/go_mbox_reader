@@ -1,7 +1,6 @@
 package mbox_reader
 
 import (
-	"bytes"
 	"encoding/json"
 	"io/ioutil"
 	"testing"
@@ -24,7 +23,7 @@ func TestParseHeaderLine(t *testing.T) {
 	for ind, tcase := range testTable {
 		t.Run(string(ind), func(t *testing.T) {
 			var errText string
-			name, value, err := parseHeaderLine([]byte(tcase.Line))
+			name, value, err := parseHeaderLine(tcase.Line)
 			if err != nil {
 				errText = err.Error()
 			} else {
@@ -34,9 +33,9 @@ func TestParseHeaderLine(t *testing.T) {
 			// fmt.Printf("\n\nwant name:%s, value:%s, error:%s\ngot name:%s, value:%s, error:%s\n\n",
 			// 	tcase.Name, tcase.Value, tcase.Error, name, string(value), errText)
 
-			if name != tcase.Name || string(value) != tcase.Value || errText != tcase.Error {
+			if name != tcase.Name || value != tcase.Value || errText != tcase.Error {
 				t.Errorf("\nwant name:%s, value:%s, error:%s\ngot name:%s, value:%s, error:%s\n",
-					tcase.Name, tcase.Value, tcase.Error, name, string(value), errText)
+					tcase.Name, tcase.Value, tcase.Error, name, value, errText)
 			}
 		})
 	}
@@ -56,12 +55,12 @@ func TestDecodeMimeEncoded(t *testing.T) {
 
 	for ind, tcase := range testTable {
 		t.Run(string(ind), func(t *testing.T) {
-			output := decodeMimeEncoded([]byte(tcase.Input))
+			output := decodeMimeEncoded(tcase.Input)
 
 			// fmt.Printf("\n\nwant name:%s, value:%s, error:%s\ngot name:%s, value:%s, error:%s\n\n",
 			// 	tcase.Name, tcase.Value, tcase.Error, name, string(value), errText)
-			tOutput := []byte(tcase.Output)
-			if !bytes.Equal(output, tOutput) {
+			tOutput := tcase.Output
+			if output != tOutput {
 				t.Errorf("\nwant: %v\n got: %v\n", tOutput, output)
 			}
 		})
@@ -82,7 +81,7 @@ func TestIsMimeEncoded(t *testing.T) {
 
 	for ind, tcase := range testTable {
 		t.Run(string(ind), func(t *testing.T) {
-			output := isMimeEncoded([]byte(tcase.Input))
+			output := isMimeEncoded(tcase.Input)
 
 			// fmt.Printf("\n\nwant name:%s, value:%s, error:%s\ngot name:%s, value:%s, error:%s\n\n",
 			// 	tcase.Name, tcase.Value, tcase.Error, name, string(value), errText)

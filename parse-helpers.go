@@ -13,15 +13,12 @@ import (
 	"golang.org/x/net/html/charset"
 )
 
-func reachedNewMessage(line []byte) bool {
-	if bytes.HasPrefix(line, []byte("From ")) || bytes.HasPrefix(line, []byte("\nFrom ")) ||
-		bytes.HasPrefix(line, []byte(">From ")) || bytes.HasPrefix(line, []byte("\n>From ")) {
-		return true
-	}
-	return false
+func reachedNewMessage(line string) bool {
+	return strings.HasPrefix(line, "From ") || strings.HasPrefix(line, ">From ")
 }
 
-func stringIsHeaderName(bSlice []byte) bool {
+func stringIsHeaderName(line string) bool {
+	bSlice := []byte(line)
 	badChars := []byte("\t\n\r :")
 	badCharsLen := len(badChars)
 
@@ -36,13 +33,13 @@ func stringIsHeaderName(bSlice []byte) bool {
 	return true
 }
 
-func parseHeaderLine(line []byte) (name string, value []byte, err error) {
-	colonIndex := bytes.Index(line, []byte(":"))
+func parseHeaderLine(line string) (name string, value string, err error) {
+	colonIndex := strings.Index(line, ":")
 	if colonIndex != -1 {
-		hname := line[:colonIndex]
-		if stringIsHeaderName(hname) == true {
-			name = strings.ToUpper(string(hname))
-			value = decodeMimeEncoded(line[colonIndex+1:])
+		hparts := strings.SplitN(line, ":", 2)
+		if stringIsHeaderName(hparts[0]) == true {
+			name = strings.ToUpper(hparts[0])
+			value = decodeMimeEncoded(hparts[1])
 			return
 		}
 	}
@@ -51,33 +48,33 @@ func parseHeaderLine(line []byte) (name string, value []byte, err error) {
 	return
 }
 
-func isMimeEncoded(line []byte) bool {
-	line = bytes.ToLower(line)
-	prefixOk := bytes.HasPrefix(line, []byte("=?"))
-	suffixOk := bytes.HasSuffix(line, []byte("?="))
-	encIdx := bytes.Index(line, []byte("?b?"))
+func isMimeEncoded(line string) bool {
+	line = strings.ToLower(line)
+	prefixOk := strings.HasPrefix(line, "=?")
+	suffixOk := strings.HasSuffix(line, "?=")
+	encIdx := strings.Index(line, "?b?")
 	if encIdx == -1 {
-		encIdx = bytes.Index(line, []byte("?q?"))
+		encIdx = strings.Index(line, "?q?")
 	}
 	return prefixOk == true && suffixOk == true && encIdx != -1 &&
 		encIdx > 4 && len(line)-1-encIdx > 4
 }
 
-func decodeMimeEncoded(line []byte) []byte {
-	items := bytes.Split(line, []byte(" "))
-	var resultLine = make([]byte, 0)
+func decodeMimeEncoded(line string) string {
+	items := strings.Split(line, " ")
+	var resultLine []byte
 	var prevIsMimeEncoded = false
 	var err error
 	for _, item := range items {
 		if isMimeEncoded(item) {
 			rgx, _ := regexp.Compile(`([a-zA-Z0-9\-\*]+=\")?=\?([a-zA-Z0-9\-]+)\?([qbQB])\?([a-zA-Z=0-9\"\_\+\-\/\.]+)\?=(\")?`)
-			matches := rgx.FindStringSubmatch(string(item))
+			matches := rgx.FindStringSubmatch(item)
 
-			prefix := []byte(matches[1])
+			prefix := matches[1]
 			charsetEnc := strings.ToLower(matches[2])
 			transitEnc := strings.ToLower(matches[3])
 			value := matches[4]
-			postfix := []byte(matches[5])
+			postfix := matches[5]
 
 			decoded := make([]byte, len(value))
 			if transitEnc == "q" {
@@ -90,7 +87,7 @@ func decodeMimeEncoded(line []byte) []byte {
 				if prevIsMimeEncoded == false {
 					resultLine = append(resultLine, []byte(" ")...)
 				}
-				resultLine = append(resultLine, item...)
+				resultLine = append(resultLine, []byte(item)...)
 				continue
 			}
 
@@ -104,12 +101,14 @@ func decodeMimeEncoded(line []byte) []byte {
 				resultLine = append(resultLine, item...)
 				continue
 			}
+
 			if prevIsMimeEncoded == false {
 				resultLine = append(resultLine, []byte(" ")...)
 			}
-			item = append(prefix, convItem...)
-			item = append(item, postfix...)
-			resultLine = append(resultLine, item...)
+
+			resultLine = append(resultLine, prefix...)
+			resultLine = append(resultLine, convItem...)
+			resultLine = append(resultLine, postfix...)
 			prevIsMimeEncoded = true
 		} else {
 			resultLine = append(resultLine, []byte(" ")...)
@@ -118,10 +117,10 @@ func decodeMimeEncoded(line []byte) []byte {
 		}
 	}
 	resultLine = bytes.TrimLeft(resultLine, " ")
-	return resultLine
+	return string(resultLine)
 }
 
-func messageIsMultipart(msg *Message) (isMultipart bool, boundary []byte, err error) {
+func messageIsMultipart(msg *Message) (isMultipart bool, boundary string, err error) {
 	isMultipart = false
 
 	ctype, ok := msg.headers[string(H_CT_TYPE)]
@@ -130,10 +129,10 @@ func messageIsMultipart(msg *Message) (isMultipart bool, boundary []byte, err er
 		return
 	}
 
-	if bytes.HasPrefix(ctype[0], []byte(CT_MP_MIXED)) || bytes.HasPrefix(ctype[0], []byte(CT_MP_RELATED)) {
+	if strings.HasPrefix(ctype[0], CT_MP_MIXED) || strings.HasPrefix(ctype[0], CT_MP_RELATED) {
 		isMultipart = true
 		boundary = getBoundaryFromCType(ctype[0])
-		if boundary == nil {
+		if boundary == "" {
 			err = errors.New("The message is multipart but a boundary is empty")
 			return
 		}
@@ -141,25 +140,25 @@ func messageIsMultipart(msg *Message) (isMultipart bool, boundary []byte, err er
 	return
 }
 
-func getBoundaryFromCType(ctype []byte) []byte {
+func getBoundaryFromCType(ctype string) string {
 	r, _ := regexp.Compile(`.+boundary=(\")?([^\"\n]+)(\")?.*`)
-	matches := r.FindStringSubmatch(string(ctype))
+	matches := r.FindStringSubmatch(ctype)
 	if matches[2] != "" {
-		return []byte(matches[2])
+		return matches[2]
 	}
-	return nil
+	return ""
 }
 
-func getMimeTypeFromCType(ctype []byte) []byte {
-	splitted := bytes.Split(ctype, []byte(";"))
-	return bytes.Trim(splitted[0], " \t")
+func getMimeTypeFromCType(ctype string) string {
+	splitted := strings.Split(ctype, ";")
+	return strings.Trim(splitted[0], " \t")
 }
 
-func getCharsetFromCType(ctype []byte) []byte {
+func getCharsetFromCType(ctype string) string {
 	r, _ := regexp.Compile(`.+charset=(\")?([^\"\n]+)(\")?.*`)
-	matches := r.FindStringSubmatch(string(ctype))
+	matches := r.FindStringSubmatch(ctype)
 	if matches[2] != "" {
-		return []byte(matches[2])
+		return matches[2]
 	}
-	return nil
+	return ""
 }

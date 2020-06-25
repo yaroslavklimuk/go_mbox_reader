@@ -2,136 +2,148 @@ package mbox_reader
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"mime/quotedprintable"
+	"strings"
 	"time"
 )
 
 type Message struct {
 	sender      string
 	timestamp   time.Time
-	headers     map[string][][]byte
+	headers     map[string][]string
 	bodies      map[string]Section
 	attachments []Section
-	content     [][]byte
+	content     []string
 }
 
 type Section struct {
-	headers   map[string][][]byte
-	startLine uint64
-	endLine   uint64
+	headers   map[string][]string
+	startLine int
+	endLine   int
 }
 
 type Header struct {
 	Name   string
-	Values [][]byte
+	Values []string
 }
 
 type MessageIface interface {
 	getSender() string
 	getTimestamp() time.Time
-	getBody(string) ([]byte, error)
+	getBody(string) (string, error)
 	getHeader(string) (Header, bool)
 	getHeaders() []Header
 	getAttachments() []AbstractAttachmentIface
-	getRawContents() []byte
+	getRawContents() string
 }
 
-func ParseMessage(scanner *bufio.Scanner, reader *bufio.Reader) (*Message, error) {
-	msg := &Message{}
-	msg.content = make([][]byte, 0)
+func readMsgContent(reader io.ReadSeeker) (Message, error) {
+	scanner := bufio.NewScanner(reader)
+	var msg = &Message{}
+	var lineStr string
 
-	var lineBytes []byte
+	scanner.Scan()
+	lineStr = scanner.Text()
+	msg.content = append(msg.content, lineStr)
+
 	for scanner.Scan() {
-		lineBytes = scanner.Bytes()
-		if reachedNewMessage(lineBytes) == true {
+		lineStr = scanner.Text()
+		if reachedNewMessage(lineStr) == true {
+			reader.Seek(int64(-len(lineStr)-1), 1)
 			break
 		}
+		msg.content = append(msg.content, lineStr)
 	}
 	if err := scanner.Err(); err != nil {
-		return nil, err
+		return *msg, err
+	}
+	return *msg, nil
+}
+
+func parseMessage(msg *Message) error {
+	id, date, err := parseMessagePrefix(msg.content[0])
+	if err != nil {
+		return err
 	}
 
-	id, date, err := ParseMessagePrefix(lineBytes)
-	if err != nil {
-		return nil, err
-	}
-	msg.content = append(msg.content, lineBytes)
 	msg.sender = id
 	msg.timestamp = date
 
-	err = ParseMessageHeaders(scanner, msg)
+	var linePos int
+	linePos, err = parseMessageHeaders(msg)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	err = ParseMessageBody(scanner, reader, msg)
+	err = parseMessageBody(msg, &linePos)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return msg, nil
+	return nil
 }
 
-func ParseMessagePrefix(lineBytes []byte) (id string, date time.Time, err error) {
+func parseMessagePrefix(lineStr string) (id string, date time.Time, err error) {
 	const mboxoPrefix = "From "
 	const mboxrdPrefix = ">From "
 
-	var prefix []byte
+	var prefix string
 
-	if bytes.HasPrefix(lineBytes, []byte(mboxoPrefix)) {
-		prefix = []byte(mboxoPrefix)
-	} else if bytes.HasPrefix(lineBytes, []byte(mboxrdPrefix)) {
-		prefix = []byte(mboxrdPrefix)
+	if strings.HasPrefix(lineStr, string(mboxoPrefix)) {
+		prefix = string(mboxoPrefix)
+	} else if strings.HasPrefix(lineStr, string(mboxrdPrefix)) {
+		prefix = string(mboxrdPrefix)
 	} else {
 		err = errors.New("Not a message start line.")
 		return
 	}
 
-	lineBytes = lineBytes[len(prefix):len(lineBytes)]
+	lineStr = lineStr[len(prefix):]
 
-	idx := bytes.IndexByte(lineBytes, ' ')
+	idx := strings.Index(lineStr, " ")
 	if idx == -1 {
-		err = errors.New("missing ' ' after message id")
+		err = errors.New("A white space after message id is missing.")
 		return
 	}
-	id = string(lineBytes[0:idx])
-	lineBytes = bytes.TrimLeft(lineBytes[idx+1:len(lineBytes)], " ")
+	id = lineStr[0:idx]
+	lineStr = strings.TrimLeft(lineStr[idx+1:], " ")
 
-	date, err = time.Parse(HEAD_TIMESTAMP_FMT, string(lineBytes))
+	date, err = time.Parse(HEAD_TIMESTAMP_FMT, lineStr)
 	if err != nil {
-		err = fmt.Errorf("invalid date %q:%q", err.Error(), lineBytes)
+		err = fmt.Errorf("invalid date %q:%q", err.Error(), lineStr)
 		return
 	}
-
 	return
 }
 
-func ParseMessageHeaders(scanner *bufio.Scanner, msg *Message) error {
-	headers, err := parseHeaders(scanner, msg)
+func parseMessageHeaders(msg *Message) (int, error) {
+	var linePos int
+	linePos = 1
+	headers, err := parseHeaders(msg, &linePos)
 	msg.headers = headers
 	if err != nil {
-		return err
+		return 1, err
 	}
-	return nil
+	return linePos, nil
 }
 
-func ParseMessageBody(scanner *bufio.Scanner, reader *bufio.Reader, msg *Message) (err error) {
+func parseMessageBody(msg *Message, linePos *int) (err error) {
 	isMultipart, boundary, err := messageIsMultipart(msg)
 	if err != nil {
 		return err
 	}
 	if isMultipart {
-		boundary = append([]byte("--"), boundary...)
-		err := ParseMultipartMessageBody(scanner, msg, boundary)
+		boundary = "--" + boundary
+		err := parseMultipartMessageBody(msg, boundary, linePos)
 		if err != nil {
 			return err
 		}
 	} else {
-		err := ParseSimpleMessageBody(scanner, reader, msg)
+		err := parseSimpleMessageBody(msg, linePos)
 		if err != nil {
 			return err
 		}
@@ -139,51 +151,27 @@ func ParseMessageBody(scanner *bufio.Scanner, reader *bufio.Reader, msg *Message
 	return nil
 }
 
-func ParseSimpleMessageBody(scanner *bufio.Scanner, reader *bufio.Reader, msg *Message) (err error) {
-	var lineBytes []byte
+func parseSimpleMessageBody(msg *Message, linePos *int) (err error) {
 	var section Section
-	section.startLine = uint64(len(msg.content))
-	for scanner.Scan() {
-		lineBytes = scanner.Bytes()
-		msg.content = append(msg.content, lineBytes)
-		nextBytes, err := reader.Peek(7)
-		if err != nil {
-			return err
-		}
-
-		if reachedNewMessage(nextBytes) {
-			break
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		return err
-	}
-
-	section.endLine = uint64(len(msg.content)) - 1
+	section.startLine = *linePos
+	newPos := len(msg.content) - 1
+	*linePos = newPos
+	section.endLine = *linePos
 	msg.bodies = make(map[string]Section)
 	msg.bodies[string(getMimeTypeFromCType(msg.headers[string(H_CT_TYPE)][0]))] = section
 	return nil
 }
 
-func ParseMultipartMessageBody(scanner *bufio.Scanner, msg *Message, boundary []byte) (err error) {
-	var lineBytes []byte
-	for scanner.Scan() {
-		lineBytes = scanner.Bytes()
-		msg.content = append(msg.content, lineBytes)
-		if bytes.Equal(lineBytes, boundary) {
-			break
-		}
+func parseMultipartMessageBody(msg *Message, boundary string, linePos *int) (err error) {
+	for !strings.HasPrefix(msg.content[*linePos], boundary) {
+		*linePos += 1
 	}
-	if err := scanner.Err(); err != nil {
-		return err
-	}
-
 	msg.bodies = make(map[string]Section)
 	msg.attachments = make([]Section, 0)
 	stopReading := false
 
 	for stopReading == false {
-		stopReading, err := ParseSection(scanner, msg, boundary)
+		stopReading, err := parseSection(msg, boundary, linePos)
 		if err != nil {
 			return err
 		}
@@ -194,170 +182,119 @@ func ParseMultipartMessageBody(scanner *bufio.Scanner, msg *Message, boundary []
 	return nil
 }
 
-func ParseSection(scanner *bufio.Scanner, msg *Message, boundary []byte) (lastSection bool, err error) {
-	sectionHeaders, err := parseHeaders(scanner, msg)
+func parseSection(msg *Message, boundary string, linePos *int) (lastSection bool, err error) {
+	*linePos += 1
+	fmt.Printf("CURLINE1: %s\n", msg.content[*linePos-1])
+	fmt.Printf("CURLINE2: %s\n", msg.content[*linePos])
+	sectionHeaders, err := parseHeaders(msg, linePos)
 	if err != nil {
 		return
 	}
 	if _, ok := sectionHeaders[string(H_CT_DISP)]; !ok {
-		lastSection, err := parseMainContentSection(scanner, msg, boundary, sectionHeaders)
+		lastSection, err := parseMainContentSection(msg, boundary, sectionHeaders, linePos)
 		return lastSection, err
 	} else {
-		lastSection, err := parseAttachmentSection(scanner, msg, boundary, sectionHeaders)
+		lastSection, err := parseAttachmentSection(msg, boundary, sectionHeaders, linePos)
 		return lastSection, err
 	}
 }
 
-func parseMainContentSection(scanner *bufio.Scanner, msg *Message,
-	boundary []byte, sectionHeaders map[string][][]byte) (lastSection bool, err error) {
+func parseMainContentSection(msg *Message, boundary string,
+	sectionHeaders map[string][]string, linePos *int) (lastSection bool, err error) {
 
 	ctype, ok := sectionHeaders[string(H_CT_TYPE)]
-	if !ok || ctype[0] == nil {
+	if !ok || ctype[0] == "" {
 		err = errors.New("The section does not have a Content-Type header")
 		return
 	}
-	if bytes.HasPrefix(ctype[0], []byte(CT_MP_ALTER)) {
-		lastSection, err := parseAlternativeSection(scanner, msg, boundary, ctype[0])
+	if strings.HasPrefix(ctype[0], string(CT_MP_ALTER)) {
+		lastSection, err := parseAlternativeSection(msg, boundary, ctype[0], linePos)
 		return lastSection, err
 	} else {
-		lastSection, err := parseTextSection(scanner, msg, boundary, ctype[0], sectionHeaders)
+		lastSection, err := parseTextSection(msg, boundary, ctype[0], sectionHeaders, linePos)
 		return lastSection, err
 	}
 }
 
-func parseTextSection(scanner *bufio.Scanner, msg *Message, boundary []byte,
-	ctype []byte, sectionHeaders map[string][][]byte) (lastSection bool, err error) {
+func parseTextSection(msg *Message, boundary string, ctype string,
+	sectionHeaders map[string][]string, linePos *int) (lastSection bool, err error) {
 
-	var lineBytes []byte
+	*linePos += 1
 	var section Section
-	section.startLine = uint64(len(msg.content))
+	section.startLine = *linePos
 	section.headers = sectionHeaders
-	for scanner.Scan() {
-		lineBytes = scanner.Bytes()
-		msg.content = append(msg.content, lineBytes)
 
-		if bytes.HasPrefix(lineBytes, boundary) {
-			break
-		}
+	for !strings.HasPrefix(msg.content[*linePos], boundary) {
+		*linePos += 1
 	}
-	if err := scanner.Err(); err != nil {
-		return false, err
-	}
-	section.endLine = uint64(len(msg.content)) - 2
+	section.endLine = *linePos
 	msg.bodies[string(getMimeTypeFromCType(ctype))] = section
 
-	lastBoundary := append(boundary, ([]byte("--"))...)
-	if bytes.Equal(lineBytes, lastBoundary) {
-		lastSection = true
-	} else {
-		lastSection = false
-	}
+	lastSection = msg.content[*linePos] == boundary+"--"
 	return lastSection, err
 }
 
-func parseAlternativeSection(scanner *bufio.Scanner, msg *Message, boundary []byte, ctype []byte) (lastSection bool, err error) {
-	var lineBytes []byte
+func parseAlternativeSection(msg *Message, boundary string, ctype string, linePos *int) (lastSection bool, err error) {
 	alterBoundary := getBoundaryFromCType(ctype)
 	// section is corrupted, just read raw content
-	if alterBoundary == nil {
-		for scanner.Scan() {
-			lineBytes = scanner.Bytes()
-			msg.content = append(msg.content, lineBytes)
-			if bytes.HasPrefix(lineBytes, boundary) {
-				break
-			}
-		}
-		if err := scanner.Err(); err != nil {
-			return false, err
+	if alterBoundary == "" {
+		for !strings.HasPrefix(msg.content[*linePos], boundary) {
+			*linePos += 1
 		}
 	} else {
-		err := ParseMultipartMessageBody(scanner, msg, alterBoundary)
+		err := parseMultipartMessageBody(msg, alterBoundary, linePos)
 		if err != nil {
 			return false, err
 		}
-		for scanner.Scan() {
-			lineBytes = scanner.Bytes()
-			msg.content = append(msg.content, lineBytes)
-			if bytes.HasPrefix(lineBytes, boundary) {
-				break
-			}
-		}
-		if err := scanner.Err(); err != nil {
-			return false, err
+		for !strings.HasPrefix(msg.content[*linePos], boundary) {
+			*linePos += 1
 		}
 	}
-	lastBoundary := append(boundary, ([]byte("--"))...)
-	if bytes.Equal(lineBytes, lastBoundary) {
-		lastSection = true
-	} else {
-		lastSection = false
-	}
+
+	lastSection = msg.content[*linePos] == boundary+"--"
 	return lastSection, err
 }
 
-func parseAttachmentSection(scanner *bufio.Scanner, msg *Message,
-	boundary []byte, sectionHeaders map[string][][]byte) (lastSection bool, err error) {
-	var lineBytes []byte
+func parseAttachmentSection(msg *Message, boundary string,
+	sectionHeaders map[string][]string, linePos *int) (lastSection bool, err error) {
 	var section Section
-	section.startLine = uint64(len(msg.content) - 1)
+	section.startLine = *linePos
 	section.headers = sectionHeaders
-	for scanner.Scan() {
-		lineBytes = scanner.Bytes()
-		msg.content = append(msg.content, lineBytes)
-		fmt.Printf("B: %s\n", string(msg.content[len(msg.content)-1]))
-		if bytes.HasPrefix(lineBytes, boundary) {
-			break
-		}
+	for strings.HasPrefix(msg.content[*linePos], boundary) {
+		*linePos += 1
 	}
-	if err := scanner.Err(); err != nil {
-		return false, err
-	}
-	section.endLine = uint64(len(msg.content) - 1)
+	section.endLine = *linePos
 	msg.attachments = append(msg.attachments, section)
 
-	lastBoundary := append(boundary, ([]byte("--"))...)
-	if bytes.Equal(lineBytes, lastBoundary) {
-		lastSection = true
-	} else {
-		lastSection = false
-	}
+	lastSection = msg.content[*linePos] == boundary+"--"
 	return lastSection, err
 }
 
-func parseHeaders(scanner *bufio.Scanner, msg *Message) (map[string][][]byte, error) {
-	var lineBytes []byte
+func parseHeaders(msg *Message, linePos *int) (map[string][]string, error) {
 	var currHeaderName string
 	var lastHeaderValueIdx = 0
-	var headers = make(map[string][][]byte)
-	for scanner.Scan() {
-		lineBytes = scanner.Bytes()
-		msg.content = append(msg.content, lineBytes)
-		fmt.Printf("H: %s\n", string(msg.content[len(msg.content)-1]))
-		//reached an empty line between headers and a body
-		if len(lineBytes) == 0 {
-			fmt.Println("BREAKIN IN")
-			break
-		}
-		hname, value, err := parseHeaderLine(lineBytes)
+	var headers = make(map[string][]string)
+
+	for len(msg.content[*linePos]) > 0 {
+		hname, value, err := parseHeaderLine(msg.content[*linePos])
 		if err != nil {
 			return nil, err
 		}
 
 		if hname != "" {
 			if headers[hname] == nil {
-				headers[hname] = make([][]byte, 0)
+				headers[hname] = make([]string, 0)
 			}
 			headers[hname] = append(headers[hname], value)
 			lastHeaderValueIdx = len(headers[hname]) - 1
 			currHeaderName = hname
 		} else {
 			lastValue := headers[currHeaderName][lastHeaderValueIdx]
-			lastValue = append(lastValue, value...)
+			lastValue += value
 			headers[currHeaderName][lastHeaderValueIdx] = lastValue
 		}
-	}
-	if err := scanner.Err(); err != nil {
-		return nil, err
+
+		*linePos += 1
 	}
 
 	return headers, nil
@@ -371,11 +308,11 @@ func (message Message) getTimestamp() time.Time {
 	return message.timestamp
 }
 
-func (message Message) getBody(ctype string) ([]byte, error) {
+func (message Message) getBody(ctype string) (string, error) {
 	if currSection, ok := message.bodies[ctype]; ok {
-		var rawContent []byte
-		var trasnEncHeader [][]byte
-		var transEnc []byte
+		var rawContent string
+		var trasnEncHeader []string
+		var transEnc string
 
 		trasnEncHeader, ok = currSection.headers[string(H_TR_ENC)]
 		if !ok {
@@ -385,28 +322,26 @@ func (message Message) getBody(ctype string) ([]byte, error) {
 			transEnc = trasnEncHeader[0]
 		}
 
-		rawContent = bytes.Join(message.content[currSection.startLine:currSection.endLine], []byte(""))
+		rawContent = strings.Join(message.content[currSection.startLine:currSection.endLine], "")
 
 		if string(transEnc) == string(TR_ENC_QPRNT) {
-			var decodedContent []byte
-			decodedContent, err := ioutil.ReadAll(quotedprintable.NewReader(bytes.NewReader(rawContent)))
+			decodedContent, err := ioutil.ReadAll(quotedprintable.NewReader(strings.NewReader(rawContent)))
 			if err != nil {
-				return nil, err
+				return "", err
 			}
-			return decodedContent, nil
+			return string(decodedContent), nil
 
 		} else if string(transEnc) == string(TR_ENC_B64) {
-			var decodedContent []byte
-			_, err := base64.StdEncoding.Decode(decodedContent, rawContent)
+			decodedContent, err := base64.StdEncoding.DecodeString(rawContent)
 			if err != nil {
-				return nil, err
+				return "", err
 			}
-			return decodedContent, nil
+			return string(decodedContent), nil
 		}
 
 		return rawContent, nil
 	}
-	return nil, nil
+	return "", nil
 }
 
 func (message Message) getHeader(name string) (Header, bool) {
@@ -429,6 +364,6 @@ func (message Message) getAttachments() []AbstractAttachmentIface {
 	return nil
 }
 
-func (message Message) getRawContents() []byte {
-	return bytes.Join(message.content, []byte("\n"))
+func (message Message) getRawContents() string {
+	return strings.Join(message.content, "\n")
 }
