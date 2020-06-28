@@ -184,8 +184,6 @@ func parseMultipartMessageBody(msg *Message, boundary string, linePos *int) (err
 
 func parseSection(msg *Message, boundary string, linePos *int) (lastSection bool, err error) {
 	*linePos += 1
-	fmt.Printf("CURLINE1: %s\n", msg.content[*linePos-1])
-	fmt.Printf("CURLINE2: %s\n", msg.content[*linePos])
 	sectionHeaders, err := parseHeaders(msg, linePos)
 	if err != nil {
 		return
@@ -260,7 +258,7 @@ func parseAttachmentSection(msg *Message, boundary string,
 	var section Section
 	section.startLine = *linePos
 	section.headers = sectionHeaders
-	for strings.HasPrefix(msg.content[*linePos], boundary) {
+	for !strings.HasPrefix(msg.content[*linePos], boundary) {
 		*linePos += 1
 	}
 	section.endLine = *linePos
@@ -357,7 +355,17 @@ func (message Message) getHeader(name string) (Header, bool) {
 }
 
 func (message Message) getHeaders() []Header {
-	return nil
+	var headers = make([]Header, len(message.headers))
+	hind := 0
+	for hkey, hvals := range message.headers {
+		header := Header{
+			Name:   hkey,
+			Values: hvals,
+		}
+		headers[hind] = header
+		hind += 1
+	}
+	return headers
 }
 
 func (message Message) getAttachments() []AbstractAttachmentIface {

@@ -26,7 +26,7 @@
 			"X-Originating-IP": ["[112.112.112.112]"]
 		},
 		"bodies": {
-			"text/html": "<html>\r\n<head>\r\n<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">\r\n</head>\r\n<body>\r\n<p>Здравствуйте, John Doe!<br>\r\nCONFIDENTIALITY NOTICE:<br>\r\nThe contents of this message are intended solely for business communication.\r\n</body>\r\n</html>"
+			"text/html": "<html>\n<head>\n<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">\n</head>\n<body>\n<p>Здравствуйте, John Doe!<br>\nCONFIDENTIALITY NOTICE:<br>\nThe contents of this message are intended solely for business communication.\n</body>\n</html>"
 		},
 		"attachments":[
 			{
