@@ -4,6 +4,8 @@ import (
 	"io"
 	"os"
 	"time"
+
+	"github.com/golang/go/src/cmd/go/internal/lockedfile/internal/filelock"
 )
 
 type MboxReader struct {
@@ -24,6 +26,7 @@ type MboxReaderIface interface {
 	withHeaderRegex(string, string)
 	withAttachmentName(string)
 	withAttachmentNameRegex(string)
+	setFilePath(filepath string) error
 	resetFilters()
 }
 
@@ -41,6 +44,8 @@ func OpenMboxReader(filepath string) (*MboxReader, error) {
 }
 
 func (reader *MboxReader) Read() (msg MessageIface, err error) {
+	filelock.Lock(reader.reader)
+	defer filelock.Unlock(reader.reader)
 	for {
 		msg, err := readMsgContent(reader.reader)
 		if err != nil {
@@ -50,13 +55,11 @@ func (reader *MboxReader) Read() (msg MessageIface, err error) {
 		if err != nil {
 			return nil, err
 		}
-
 		goodMsg := true
 
 		if !reader.FromTime.IsZero() && reader.FromTime.Before(msg.getTimestamp()) {
 			goodMsg = false
 		}
-
 		if !reader.BeforeTime.IsZero() && reader.FromTime.After(msg.getTimestamp()) {
 			goodMsg = false
 		}
@@ -77,30 +80,40 @@ func (reader *MboxReader) Read() (msg MessageIface, err error) {
 	return msg, err
 }
 
-func (reader MboxReader) setFromTime(time.Time) {
+func (reader *MboxReader) setFromTime(time.Time) {
 
 }
 
-func (reader MboxReader) setBeforeTime(time.Time) {
+func (reader *MboxReader) setBeforeTime(time.Time) {
 
 }
 
-func (reader MboxReader) withHeader(string, string) {
+func (reader *MboxReader) withHeader(string, string) {
 
 }
 
-func (reader MboxReader) withHeaderRegex(string, string) {
+func (reader *MboxReader) withHeaderRegex(string, string) {
 
 }
 
-func (reader MboxReader) withAttachmentName(string) {
+func (reader *MboxReader) withAttachmentName(string) {
 
 }
 
-func (reader MboxReader) withAttachmentNameRegex(string) {
+func (reader *MboxReader) withAttachmentNameRegex(string) {
 
 }
 
-func (reader MboxReader) resetFilters() {
+func (reader *MboxReader) resetFilters() {
 
+}
+
+func (reader *MboxReader) setFilePath(filepath string) error {
+	file, err := os.Open(filepath)
+	if err != nil {
+		return err
+	}
+
+	reader.reader = file
+	return nil
 }
