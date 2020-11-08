@@ -2,6 +2,7 @@ package mbox_reader
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"testing"
 )
@@ -21,7 +22,7 @@ func TestParseHeaderLine(t *testing.T) {
 	json.Unmarshal(data, &testTable)
 
 	for ind, tcase := range testTable {
-		t.Run(string(ind), func(t *testing.T) {
+		t.Run(fmt.Sprint(ind), func(t *testing.T) {
 			var errText string
 			name, value, err := parseHeaderLine(tcase.Line)
 			if err != nil {
@@ -54,7 +55,7 @@ func TestDecodeMimeEncoded(t *testing.T) {
 	json.Unmarshal(data, &testTable)
 
 	for ind, tcase := range testTable {
-		t.Run(string(ind), func(t *testing.T) {
+		t.Run(fmt.Sprint(ind), func(t *testing.T) {
 			output := decodeMimeEncoded(tcase.Input)
 
 			// fmt.Printf("\n\nwant name:%s, value:%s, error:%s\ngot name:%s, value:%s, error:%s\n\n",
@@ -80,7 +81,7 @@ func TestIsMimeEncoded(t *testing.T) {
 	json.Unmarshal(data, &testTable)
 
 	for ind, tcase := range testTable {
-		t.Run(string(ind), func(t *testing.T) {
+		t.Run(fmt.Sprint(ind), func(t *testing.T) {
 			output := isMimeEncoded(tcase.Input)
 
 			// fmt.Printf("\n\nwant name:%s, value:%s, error:%s\ngot name:%s, value:%s, error:%s\n\n",

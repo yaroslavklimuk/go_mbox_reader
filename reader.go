@@ -1,11 +1,11 @@
 package mbox_reader
 
 import (
-	"io"
+	"errors"
 	"os"
 	"time"
 
-	"github.com/golang/go/src/cmd/go/internal/lockedfile/internal/filelock"
+	"github.com/gofrs/flock"
 )
 
 type MboxReader struct {
@@ -15,7 +15,9 @@ type MboxReader struct {
 	BeforeTime            time.Time
 	AttachmentNames       []string
 	AttachmentNameRegexes []string
-	reader                io.ReadSeeker
+	filepath              string
+	trialsCount           uint
+	trialsTimeout         uint
 }
 
 type MboxReaderIface interface {
@@ -30,24 +32,27 @@ type MboxReaderIface interface {
 	resetFilters()
 }
 
-func OpenMboxReader(filepath string) (*MboxReader, error) {
-	file, err := os.Open(filepath)
-	if err != nil {
-		return nil, err
-	}
-
+func NewMboxReader(filepath string, trialsCount uint, trialsTimeout uint) (*MboxReader, error) {
 	mboxReader := &MboxReader{
-		reader: file,
+		filepath:      filepath,
+		trialsCount:   trialsCount,
+		trialsTimeout: trialsTimeout,
 	}
 
 	return mboxReader, nil
 }
 
-func (reader *MboxReader) Read() (msg MessageIface, err error) {
-	filelock.Lock(reader.reader)
-	defer filelock.Unlock(reader.reader)
+func (mboxReader *MboxReader) Read() (msg MessageIface, err error) {
+	file, filelock, err := mboxReader.openAndLockFile()
+	if err != nil {
+		return nil, err
+	}
+
+	defer filelock.Unlock()
+	defer file.Close()
+
 	for {
-		msg, err := readMsgContent(reader.reader)
+		msg, err := readMsgContent(file)
 		if err != nil {
 			return nil, err
 		}
@@ -57,14 +62,14 @@ func (reader *MboxReader) Read() (msg MessageIface, err error) {
 		}
 		goodMsg := true
 
-		if !reader.FromTime.IsZero() && reader.FromTime.Before(msg.getTimestamp()) {
+		if !mboxReader.FromTime.IsZero() && mboxReader.FromTime.Before(msg.getTimestamp()) {
 			goodMsg = false
 		}
-		if !reader.BeforeTime.IsZero() && reader.FromTime.After(msg.getTimestamp()) {
+		if !mboxReader.BeforeTime.IsZero() && mboxReader.FromTime.After(msg.getTimestamp()) {
 			goodMsg = false
 		}
 
-		for key, value := range reader.HeaderFilters {
+		for key, value := range mboxReader.HeaderFilters {
 			msgHeader, ok := msg.getHeader(key)
 			if ok && (len(msgHeader.Values) == 0 || msgHeader.Values[0] != value) {
 				goodMsg = false
@@ -80,40 +85,72 @@ func (reader *MboxReader) Read() (msg MessageIface, err error) {
 	return msg, err
 }
 
-func (reader *MboxReader) setFromTime(time.Time) {
-
-}
-
-func (reader *MboxReader) setBeforeTime(time.Time) {
-
-}
-
-func (reader *MboxReader) withHeader(string, string) {
-
-}
-
-func (reader *MboxReader) withHeaderRegex(string, string) {
-
-}
-
-func (reader *MboxReader) withAttachmentName(string) {
-
-}
-
-func (reader *MboxReader) withAttachmentNameRegex(string) {
-
-}
-
-func (reader *MboxReader) resetFilters() {
-
-}
-
-func (reader *MboxReader) setFilePath(filepath string) error {
-	file, err := os.Open(filepath)
+func (mboxReader *MboxReader) openAndLockFile() (lockedFile *os.File, filelock *flock.Flock, err error) {
+	file, err := os.Open(mboxReader.filepath)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
-	reader.reader = file
-	return nil
+	filelock, err = mboxReader.lockFile()
+	if err != nil {
+		file.Close()
+		return nil, nil, err
+	}
+
+	return file, filelock, nil
+}
+
+func (mboxReader *MboxReader) lockFile() (filelock *flock.Flock, err error) {
+	filelock = flock.New(mboxReader.filepath)
+	locked, err := filelock.TryLock()
+	var localTrialsCount uint
+	if err != nil || locked == false {
+		localTrialsCount = 1
+		for localTrialsCount <= mboxReader.trialsCount {
+			locked, err := filelock.TryLock()
+			localTrialsCount += 1
+			if err == nil && locked == true {
+				return filelock, nil
+			}
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	if locked == false {
+		return nil, errors.New("Couldn't lock the file")
+	}
+	return filelock, nil
+}
+
+func (reader *MboxReader) SetFromTime(time.Time) {
+
+}
+
+func (reader *MboxReader) SetBeforeTime(time.Time) {
+
+}
+
+func (reader *MboxReader) WithHeader(string, string) {
+
+}
+
+func (reader *MboxReader) WithHeaderRegex(string, string) {
+
+}
+
+func (reader *MboxReader) WithAttachmentName(string) {
+
+}
+
+func (reader *MboxReader) WithAttachmentNameRegex(string) {
+
+}
+
+func (reader *MboxReader) ResetFilters() {
+
+}
+
+func (mboxReader *MboxReader) SetFilePath(filepath string) {
+	mboxReader.filepath = filepath
 }

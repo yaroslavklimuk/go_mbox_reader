@@ -46,7 +46,7 @@ func TestParseMessageHeaders(t *testing.T) {
 	json.Unmarshal(data, &testTable)
 
 	for ind, tcase := range testTable {
-		t.Run(string(ind), func(t *testing.T) {
+		t.Run(fmt.Sprint(ind), func(t *testing.T) {
 			openedFile, err := os.Open("testcases/distinct-messages/" + tcase.File)
 			if err != nil {
 				fmt.Println(err)
@@ -99,7 +99,7 @@ func TestParseMessage(t *testing.T) {
 	json.Unmarshal(data, &testTable)
 
 	for ind, tcase := range testTable {
-		t.Run(string(ind), func(t *testing.T) {
+		t.Run(fmt.Sprint(ind), func(t *testing.T) {
 			openedFile, err := os.Open("testcases/distinct-messages/" + tcase.MessageFile)
 			if err != nil {
 				fmt.Println(err)
