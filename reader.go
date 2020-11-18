@@ -123,34 +123,37 @@ func (mboxReader *MboxReader) lockFile() (filelock *flock.Flock, err error) {
 	return filelock, nil
 }
 
-func (reader *MboxReader) SetFromTime(time.Time) {
-
+func (mboxReader *MboxReader) SetFromTime(fromTime time.Time) *MboxReader {
+	mboxReader.FromTime = fromTime
+	return mboxReader
 }
 
-func (reader *MboxReader) SetBeforeTime(time.Time) {
-
+func (mboxReader *MboxReader) SetBeforeTime(beforeTime time.Time) *MboxReader {
+	mboxReader.BeforeTime = beforeTime
+	return mboxReader
 }
 
-func (reader *MboxReader) WithHeader(string, string) {
-
+func (mboxReader *MboxReader) WithHeader(key string, value string) *MboxReader {
+	mboxReader.HeaderFilters[key] = value
+	return mboxReader
 }
 
-func (reader *MboxReader) WithHeaderRegex(string, string) {
-
+func (mboxReader *MboxReader) WithHeaderRegex(key string, regex string) *MboxReader {
+	mboxReader.HeaderRegexFilters[key] = regex
+	return mboxReader
 }
 
-func (reader *MboxReader) WithAttachmentName(string) {
-
+func (mboxReader *MboxReader) WithAttachmentName(name string) *MboxReader {
+	mboxReader.AttachmentNames = append(mboxReader.AttachmentNames, name)
+	return mboxReader
 }
 
-func (reader *MboxReader) WithAttachmentNameRegex(string) {
-
+func (mboxReader *MboxReader) WithAttachmentNameRegex(regex string) *MboxReader {
+	mboxReader.AttachmentNameRegexes = append(mboxReader.AttachmentNameRegexes, regex)
+	return mboxReader
 }
 
-func (reader *MboxReader) ResetFilters() {
-
-}
-
-func (mboxReader *MboxReader) SetFilePath(filepath string) {
+func (mboxReader *MboxReader) SetFilePath(filepath string) *MboxReader {
 	mboxReader.filepath = filepath
+	return mboxReader
 }

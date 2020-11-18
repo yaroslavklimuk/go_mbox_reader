@@ -120,6 +120,25 @@ func decodeMimeEncoded(line string) string {
 	return string(resultLine)
 }
 
+func decodeFromTransferEncoding(rawContent string, transEnc string) (string, error) {
+	if string(transEnc) == string(TR_ENC_QPRNT) {
+		decodedContent, err := ioutil.ReadAll(quotedprintable.NewReader(strings.NewReader(rawContent)))
+		if err != nil {
+			return "", err
+		}
+		return string(decodedContent), nil
+
+	} else if string(transEnc) == string(TR_ENC_B64) {
+		decodedContent, err := base64.StdEncoding.DecodeString(rawContent)
+		if err != nil {
+			return "", err
+		}
+		return string(decodedContent), nil
+	} else {
+		return rawContent, nil
+	}
+}
+
 func messageIsMultipart(msg *Message) (isMultipart bool, boundary string, err error) {
 	isMultipart = false
 

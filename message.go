@@ -42,6 +42,84 @@ type MessageIface interface {
 	getRawContents() string
 }
 
+func (message Message) getSender() string {
+	return message.sender
+}
+
+func (message Message) getTimestamp() time.Time {
+	return message.timestamp
+}
+
+func (message Message) getBody(ctype string) (string, error) {
+	if currSection, ok := message.bodies[ctype]; ok {
+		var rawContent string
+		var trasnEncHeader []string
+		var transEnc string
+
+		trasnEncHeader, ok = currSection.headers[string(H_TR_ENC)]
+		if !ok {
+			trasnEncHeader, ok = message.headers[string(H_TR_ENC)]
+		}
+		if ok && len(trasnEncHeader) > 0 {
+			transEnc = trasnEncHeader[0]
+		}
+
+		rawContent = strings.Join(message.content[currSection.startLine:currSection.endLine], "")
+
+		if string(transEnc) == string(TR_ENC_QPRNT) {
+			decodedContent, err := ioutil.ReadAll(quotedprintable.NewReader(strings.NewReader(rawContent)))
+			if err != nil {
+				return "", err
+			}
+			return string(decodedContent), nil
+
+		} else if string(transEnc) == string(TR_ENC_B64) {
+			decodedContent, err := base64.StdEncoding.DecodeString(rawContent)
+			if err != nil {
+				return "", err
+			}
+			return string(decodedContent), nil
+		}
+
+		return rawContent, nil
+	}
+	return "", nil
+}
+
+func (message Message) getHeader(name string) (Header, bool) {
+	values, ok := message.headers[name]
+	var header Header
+	if ok {
+		header = Header{
+			Name:   name,
+			Values: values,
+		}
+	}
+	return header, ok
+}
+
+func (message Message) getHeaders() []Header {
+	var headers = make([]Header, len(message.headers))
+	hind := 0
+	for hkey, hvals := range message.headers {
+		header := Header{
+			Name:   hkey,
+			Values: hvals,
+		}
+		headers[hind] = header
+		hind += 1
+	}
+	return headers
+}
+
+func (message Message) getAttachments() []AbstractAttachmentIface {
+	return nil
+}
+
+func (message Message) getRawContents() string {
+	return strings.Join(message.content, "\n")
+}
+
 func readMsgContent(reader io.ReadSeeker) (Message, error) {
 	scanner := bufio.NewScanner(reader)
 	var msg = &Message{}
@@ -296,82 +374,4 @@ func parseHeaders(msg *Message, linePos *int) (map[string][]string, error) {
 	}
 
 	return headers, nil
-}
-
-func (message Message) getSender() string {
-	return message.sender
-}
-
-func (message Message) getTimestamp() time.Time {
-	return message.timestamp
-}
-
-func (message Message) getBody(ctype string) (string, error) {
-	if currSection, ok := message.bodies[ctype]; ok {
-		var rawContent string
-		var trasnEncHeader []string
-		var transEnc string
-
-		trasnEncHeader, ok = currSection.headers[string(H_TR_ENC)]
-		if !ok {
-			trasnEncHeader, ok = message.headers[string(H_TR_ENC)]
-		}
-		if ok && len(trasnEncHeader) > 0 {
-			transEnc = trasnEncHeader[0]
-		}
-
-		rawContent = strings.Join(message.content[currSection.startLine:currSection.endLine], "")
-
-		if string(transEnc) == string(TR_ENC_QPRNT) {
-			decodedContent, err := ioutil.ReadAll(quotedprintable.NewReader(strings.NewReader(rawContent)))
-			if err != nil {
-				return "", err
-			}
-			return string(decodedContent), nil
-
-		} else if string(transEnc) == string(TR_ENC_B64) {
-			decodedContent, err := base64.StdEncoding.DecodeString(rawContent)
-			if err != nil {
-				return "", err
-			}
-			return string(decodedContent), nil
-		}
-
-		return rawContent, nil
-	}
-	return "", nil
-}
-
-func (message Message) getHeader(name string) (Header, bool) {
-	values, ok := message.headers[name]
-	var header Header
-	if ok {
-		header = Header{
-			Name:   name,
-			Values: values,
-		}
-	}
-	return header, ok
-}
-
-func (message Message) getHeaders() []Header {
-	var headers = make([]Header, len(message.headers))
-	hind := 0
-	for hkey, hvals := range message.headers {
-		header := Header{
-			Name:   hkey,
-			Values: hvals,
-		}
-		headers[hind] = header
-		hind += 1
-	}
-	return headers
-}
-
-func (message Message) getAttachments() []AbstractAttachmentIface {
-	return nil
-}
-
-func (message Message) getRawContents() string {
-	return strings.Join(message.content, "\n")
 }
