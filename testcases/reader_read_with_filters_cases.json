@@ -1,0 +1,15 @@
+[
+    {
+    	    "filepath": "reader-test-msg-1.mbox",
+		"header-filters": {
+			"subject": "test subject 1"
+		},
+		"from-time": "Wed, 18 Nov 2020 15:04:05 MST",
+		"before-time": "Fri, 20 Nov 2020 15:04:05 MST",
+		"attachment-names": [
+			"attachment_ytfdfsd.pdf"
+		],
+		"attachment-name-regex": [],
+		"msg-found": 1
+    }
+]

@@ -9,95 +9,97 @@ import (
 )
 
 type MboxReader struct {
-	HeaderFilters         map[string]string
-	HeaderRegexFilters    map[string]string
-	FromTime              time.Time
-	BeforeTime            time.Time
-	AttachmentNames       []string
-	AttachmentNameRegexes []string
+	headerFilters         map[string]string
+	headerRegexFilters    map[string]string
+	afterTime             time.Time
+	beforeTime            time.Time
+	attachmentNames       []string
+	attachmentNameRegexes []string
+	file                  *os.File
 	filepath              string
-	trialsCount           uint
-	trialsTimeout         uint
+	lockTrialsCount       uint
+	lockTrialsTimeout     uint
 }
 
 type MboxReaderIface interface {
-	Read() (Message, error)
-	setFromTime(time.Time)
+	Read() (*Message, error)
+	setAfterTime(time.Time)
 	setBeforeTime(time.Time)
 	withHeader(string, string)
 	withHeaderRegex(string, string)
 	withAttachmentName(string)
 	withAttachmentNameRegex(string)
-	setFilePath(filepath string) error
+	setFilePath(filepath string) (*MboxReaderIface, error)
 	resetFilters()
 }
 
-func NewMboxReader(filepath string, trialsCount uint, trialsTimeout uint) (*MboxReader, error) {
-	mboxReader := &MboxReader{
-		filepath:      filepath,
-		trialsCount:   trialsCount,
-		trialsTimeout: trialsTimeout,
+func NewMboxReader(filepath string, lockTrialsCount uint, lockTrialsTimeout uint) (*MboxReader, error) {
+	file, err := os.Open(filepath)
+	if err != nil {
+		return nil, err
 	}
+
+	mboxReader := &MboxReader{
+		file:              file,
+		filepath:          filepath,
+		lockTrialsCount:   lockTrialsCount,
+		lockTrialsTimeout: lockTrialsTimeout,
+	}
+	mboxReader.headerFilters = make(map[string]string)
+	mboxReader.headerRegexFilters = make(map[string]string)
 
 	return mboxReader, nil
 }
 
-func (mboxReader *MboxReader) Read() (msg MessageIface, err error) {
-	file, filelock, err := mboxReader.openAndLockFile()
+func (mboxReader *MboxReader) Read() (*Message, error) {
+	filelock, err := mboxReader.lockFile()
 	if err != nil {
 		return nil, err
 	}
 
 	defer filelock.Unlock()
-	defer file.Close()
 
+	msg := Message{}
+
+	foundMsg := false
 	for {
-		msg, err := readMsgContent(file)
+		msg, err = readMsgContent(mboxReader.file)
 		if err != nil {
 			return nil, err
 		}
+
 		err = parseMessage(&msg)
 		if err != nil {
 			return nil, err
 		}
-		goodMsg := true
 
-		if !mboxReader.FromTime.IsZero() && mboxReader.FromTime.Before(msg.getTimestamp()) {
-			goodMsg = false
+		foundMsg = true
+
+		if !mboxReader.afterTime.IsZero() && mboxReader.afterTime.After(msg.getTimestamp()) {
+			foundMsg = false
 		}
-		if !mboxReader.BeforeTime.IsZero() && mboxReader.FromTime.After(msg.getTimestamp()) {
-			goodMsg = false
+		if !mboxReader.beforeTime.IsZero() && mboxReader.beforeTime.Before(msg.getTimestamp()) {
+			foundMsg = false
 		}
 
-		for key, value := range mboxReader.HeaderFilters {
+		for key, value := range mboxReader.headerFilters {
 			msgHeader, ok := msg.getHeader(key)
 			if ok && (len(msgHeader.Values) == 0 || msgHeader.Values[0] != value) {
-				goodMsg = false
+				foundMsg = false
 				break
 			}
 		}
 
-		if goodMsg == true {
-			return msg, nil
+		if foundMsg == true {
+			break
 		}
 	}
 
-	return msg, err
-}
-
-func (mboxReader *MboxReader) openAndLockFile() (lockedFile *os.File, filelock *flock.Flock, err error) {
-	file, err := os.Open(mboxReader.filepath)
-	if err != nil {
-		return nil, nil, err
+	if foundMsg == false {
+		err = errors.New("End of file")
 	}
 
-	filelock, err = mboxReader.lockFile()
-	if err != nil {
-		file.Close()
-		return nil, nil, err
-	}
-
-	return file, filelock, nil
+	return &msg, err
 }
 
 func (mboxReader *MboxReader) lockFile() (filelock *flock.Flock, err error) {
@@ -106,7 +108,7 @@ func (mboxReader *MboxReader) lockFile() (filelock *flock.Flock, err error) {
 	var localTrialsCount uint
 	if err != nil || locked == false {
 		localTrialsCount = 1
-		for localTrialsCount <= mboxReader.trialsCount {
+		for localTrialsCount <= mboxReader.lockTrialsCount {
 			locked, err := filelock.TryLock()
 			localTrialsCount += 1
 			if err == nil && locked == true {
@@ -123,37 +125,43 @@ func (mboxReader *MboxReader) lockFile() (filelock *flock.Flock, err error) {
 	return filelock, nil
 }
 
-func (mboxReader *MboxReader) SetFromTime(fromTime time.Time) *MboxReader {
-	mboxReader.FromTime = fromTime
+func (mboxReader *MboxReader) SetAfterTime(afterTime time.Time) *MboxReader {
+	mboxReader.afterTime = afterTime
 	return mboxReader
 }
 
 func (mboxReader *MboxReader) SetBeforeTime(beforeTime time.Time) *MboxReader {
-	mboxReader.BeforeTime = beforeTime
+	mboxReader.beforeTime = beforeTime
 	return mboxReader
 }
 
 func (mboxReader *MboxReader) WithHeader(key string, value string) *MboxReader {
-	mboxReader.HeaderFilters[key] = value
+	mboxReader.headerFilters[key] = value
 	return mboxReader
 }
 
 func (mboxReader *MboxReader) WithHeaderRegex(key string, regex string) *MboxReader {
-	mboxReader.HeaderRegexFilters[key] = regex
+	mboxReader.headerRegexFilters[key] = regex
 	return mboxReader
 }
 
 func (mboxReader *MboxReader) WithAttachmentName(name string) *MboxReader {
-	mboxReader.AttachmentNames = append(mboxReader.AttachmentNames, name)
+	mboxReader.attachmentNames = append(mboxReader.attachmentNames, name)
 	return mboxReader
 }
 
 func (mboxReader *MboxReader) WithAttachmentNameRegex(regex string) *MboxReader {
-	mboxReader.AttachmentNameRegexes = append(mboxReader.AttachmentNameRegexes, regex)
+	mboxReader.attachmentNameRegexes = append(mboxReader.attachmentNameRegexes, regex)
 	return mboxReader
 }
 
-func (mboxReader *MboxReader) SetFilePath(filepath string) *MboxReader {
+func (mboxReader *MboxReader) SetFilePath(filepath string) (*MboxReader, error) {
+	file, err := os.Open(filepath)
+	if err != nil {
+		return nil, err
+	}
+
+	mboxReader.file = file
 	mboxReader.filepath = filepath
-	return mboxReader
+	return mboxReader, nil
 }
